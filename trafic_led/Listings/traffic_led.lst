@@ -1,0 +1,180 @@
+C51 COMPILER V9.57.0.0   TRAFFIC_LED                                                       03/22/2021 17:59:36 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE TRAFFIC_LED
+OBJECT MODULE PLACED IN .\Objects\traffic_led.obj
+COMPILER INVOKED BY: D:\Tool\Keil\C51\BIN\C51.EXE ..\VSCode-C51-master\src\traffic_led.c OPTIMIZE(8,SPEED) BROWSE DEBUG 
+                    -OBJECTEXTEND PRINT(.\Listings\traffic_led.lst) TABS(2) OBJECT(.\Objects\traffic_led.obj)
+
+line level    source
+
+   1          #include <reg51.h>
+   2          
+   3          #define uchar unsigned char
+   4          #define ON 0
+   5          #define OFF 1
+   6          
+   7          sbit NS_red = P1 ^ 0;
+   8          sbit NS_yellow = P1 ^ 1;
+   9          sbit NS_green = P1 ^ 2;
+  10          
+  11          sbit EW_red = P1 ^ 3;
+  12          sbit EW_yellow = P1 ^ 4;
+  13          sbit EW_green = P1 ^ 5;
+  14          
+  15          unsigned char code LedChar[] = {0xC0, 0xF9, 0xA4, 0xB0, 0x99, 0x92, 0x82, 0xF8, 0x80, 0x90}; // 0,1,2,3,4,
+             -5,6,7,8,9
+  16          
+  17          char EWF = 30, NSF = 25, X = 30, Y = 25, Z = 30, SHU = 30;
+  18          
+  19          char count;
+  20          
+  21          void timer_init()
+  22          {
+  23   1          TMOD = 0x01;
+  24   1          TH0 = (65536 - 50000) / 256;
+  25   1          TL0 = (65536 - 50000) % 256;
+  26   1          EA = 1;
+  27   1          ET0 = 1;
+  28   1          TR0 = 1;
+  29   1      }
+  30          
+  31          void counter() interrupt 1
+  32          {
+  33   1          TH0 = (65536 - 50000) / 256;
+  34   1          TL0 = (65536 - 50000) % 256;
+  35   1          count++;
+  36   1          if (count > 20)
+  37   1          {
+  38   2              EWF--;
+  39   2              NSF--;
+  40   2              X--;
+  41   2              Y--;
+  42   2              Z--;
+  43   2              SHU--;
+  44   2              count = 0;
+  45   2          }
+  46   1      }
+  47          
+  48          void delay(uchar z)
+  49          {
+  50   1          uchar x, y;
+  51   1          for (x = z; x > 0; x--)
+  52   1              for (y = 110; y > 0; y--)
+  53   1                  ;
+C51 COMPILER V9.57.0.0   TRAFFIC_LED                                                       03/22/2021 17:59:36 PAGE 2   
+
+  54   1      }
+  55          
+  56          void EW_display(sec)
+  57          {
+  58   1          P0 = 0x01;
+  59   1          // P0 = 0x05;
+  60   1          P2 = LedChar[sec % 10]; //
+  61   1          delay(1);
+  62   1          // enhance the refresh rate
+  63   1          P0 = 0x00;
+  64   1          P2 = 0xFF;
+  65   1      
+  66   1          P0 = 0x02;
+  67   1          // P0 = 0x10;
+  68   1          P2 = LedChar[sec / 10]; //
+  69   1          delay(1);
+  70   1          // enhance the refresh rate
+  71   1          P0 = 0x00;
+  72   1          P2 = 0xFF;
+  73   1      }
+  74          
+  75          void NS_display(sec)
+  76          {
+  77   1          P0 = 0x04;
+  78   1          P3 = LedChar[sec % 10];
+  79   1          delay(1);
+  80   1          // enhance the refresh rate
+  81   1          P0 = 0x00;
+  82   1          P3 = 0xFF;
+  83   1      
+  84   1          P0 = 0x08;
+  85   1          // P0 = 0x10;
+  86   1          P3 = LedChar[sec / 10]; //
+  87   1          delay(1);
+  88   1          // enhance the refresh rate
+  89   1          P0 = 0x00;
+  90   1          P3 = 0xFF;
+  91   1      }
+  92          
+  93          void main()
+  94          {
+  95   1          /************** 状态 1：东西红灯 (30s)， 南北绿灯 (25s)************/
+  96   1          /**************** 状态 2：东西红灯 (30s)， 南北黄灯 (5s)***************/
+  97   1          while (1)
+  98   1          {
+  99   2              timer_init(); // 初始化计时器
+ 100   2      
+ 101   2              NS_green = ON; // 南北方向的绿灯打开
+ 102   2              EW_red = ON;   // 东西方向的红灯打开
+ 103   2              while (EWF != 0)
+ 104   2              {
+ 105   3                  EW_display(EWF); // 东西方向红灯 (30s)
+ 106   3                  NS_display(NSF); // 南北方向绿灯 (25s)
+ 107   3                  while (EWF == 5)
+ 108   3                  {
+ 109   4                      while (X != 0)
+ 110   4                      {
+ 111   5                          EW_display(EWF); // 东西方向红灯 (5s)
+ 112   5                          NS_display(X);   // 南北方向黄灯 (5s)
+ 113   5                          NS_green = OFF;  // 南北方向的绿灯关闭
+ 114   5                          NS_yellow = ON;  // 南北方向的黄灯打开
+ 115   5                      }
+C51 COMPILER V9.57.0.0   TRAFFIC_LED                                                       03/22/2021 17:59:36 PAGE 3   
+
+ 116   4                  }
+ 117   3              }
+ 118   2              EW_red = OFF;                                         // 东西方向的红灯关闭
+ 119   2              NS_green = OFF;                                       // 南北方向的绿灯关闭
+ 120   2              NS_yellow = OFF;                                      // 南北方向的黄灯关闭
+ 121   2              EWF = 30, NSF = 25, X = 30, Y = 25, Z = 30, SHU = 30; // 重新赋值
+ 122   2      
+ 123   2              while (1)
+ 124   2              {
+ 125   3                  timer_init(); // 初始化计时器
+ 126   3      
+ 127   3                  NS_red = ON;   // 南北方向的红灯打开
+ 128   3                  EW_green = ON; // 东西方向的绿灯打开
+ 129   3                  while (Z != 0)
+ 130   3                  {
+ 131   4                      NS_display(Z); // 南北方向红灯 (30s)
+ 132   4                      EW_display(Y); // 东西方向绿灯 (25s)
+ 133   4                      while (Z == 5)
+ 134   4                      {
+ 135   5                          while (SHU != 0)
+ 136   5                          {
+ 137   6                              EW_display(Z);   // 东西红灯 (5s)
+ 138   6                              NS_display(SHU); // 南北绿灯 (5s)
+ 139   6                              EW_green = OFF;  // 东西方向的绿灯关闭
+ 140   6                              EW_yellow = ON;  // 东西方向的黄灯打开
+ 141   6                          }
+ 142   5                      }
+ 143   4                  }
+ 144   3                  NS_red = OFF;                                         // 南北方向的红灯关闭
+ 145   3                  EW_green = OFF;                                       // 东西方向的绿灯关闭
+ 146   3                  EW_yellow = OFF;                                      // 东西方向的黄灯关闭
+ 147   3                  EWF = 30, NSF = 25, X = 30, Y = 25, Z = 30, SHU = 30; // 重新赋值
+ 148   3                  break;
+ 149   3              }
+ 150   2          }
+ 151   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    378    ----
+   CONSTANT SIZE    =     10    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      7    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

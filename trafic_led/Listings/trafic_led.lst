@@ -1,0 +1,151 @@
+C51 COMPILER V9.57.0.0   TRAFIC_LED                                                        03/18/2021 16:17:03 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE TRAFIC_LED
+OBJECT MODULE PLACED IN .\Objects\trafic_led.obj
+COMPILER INVOKED BY: D:\Tool\Keil\C51\BIN\C51.EXE trafic_led.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listi
+                    -ngs\trafic_led.lst) TABS(2) OBJECT(.\Objects\trafic_led.obj)
+
+line level    source
+
+   1          #include<reg51.h>
+   2          
+   3          
+   4          sbit led_red = P1 ^ 0;
+   5          sbit led_yellow = P1 ^ 1;
+   6          sbit led_green = P1 ^ 2;
+   7          
+   8          sbit led_red1 = P1 ^ 3;
+   9          sbit led_yellow1 = P1 ^ 4;
+  10          sbit led_green1 = P1 ^ 5;
+  11          
+  12          unsigned int i = 0;
+  13          unsigned int j = 0;
+  14          
+  15          unsigned char code LedChar[] ={0xC0, 0xF9, 0xA4, 0xB0, 0x99, 0x92, 0x82, 0xF8, 0x80, 0x90 };  //0 1 2 3 4 
+             -5 6 7 8 9
+  16          
+  17          static unsigned int sec = 5;
+  18          static unsigned char togle_flag = 0;
+  19          static unsigned char rg_flag = 0;
+  20          static unsigned char skip_yellow = 0;
+  21          static unsigned char fs = 0;
+  22          
+  23          void timer0(){
+  24   1        TMOD = 0x01;
+  25   1        TH0 = (65536-50000)/256;   
+  26   1        TL0 = (65536-50000)%256;
+  27   1        EA = 1;
+  28   1        ET0 = 1;
+  29   1        TR0 = 1;
+  30   1      }
+  31          
+  32          void tcount() interrupt 1 {
+  33   1        TH0 = (65536-50000)/256;
+  34   1        TL0 = (65536-50000)%256;
+  35   1        i++;
+  36   1      }
+  37          
+  38          void display(){
+  39   1        //P0 = 0x01;
+  40   1        P0 = 0x05;
+  41   1        P2 = LedChar[sec % 10];  // 
+  42   1        P3 = LedChar[(sec + 5) % 10];
+  43   1      
+  44   1        
+  45   1        // enhance the refresh rate
+  46   1        P0 = 0x00;
+  47   1        P2 = 0xFF;
+  48   1        P3 = 0xFF;
+  49   1        
+  50   1        //P0 = 0x02;
+  51   1        P0 = 0x10;
+  52   1        P2 = LedChar[sec / 10];  // 
+  53   1        P3 = LedChar[(sec + 5) / 10];
+C51 COMPILER V9.57.0.0   TRAFIC_LED                                                        03/18/2021 16:17:03 PAGE 2   
+
+  54   1        
+  55   1        // enhance the refresh rate
+  56   1        P0 = 0x00;
+  57   1        P2 = 0xFF;
+  58   1        P3 = 0xFF;
+  59   1      }
+  60          
+  61          void first() {
+  62   1        while(!togle_flag){
+  63   2            display();
+  64   2            if(i == 20) { //
+  65   3              
+  66   3              if (!rg_flag) {
+  67   4                led_green = 0;
+  68   4                led_green1 = !led_green;
+  69   4              } else {
+  70   4                led_red = 0;
+  71   4                led_red1 = !led_red;
+  72   4              }
+  73   3              
+  74   3              i = 0;
+  75   3              
+  76   3              if (sec > 0) sec--;
+  77   3              else {        
+  78   4                if (rg_flag) {
+  79   5                  togle_flag = 0;
+  80   5                  sec = 5;
+  81   5                  skip_yellow = 1;
+  82   5                } else if (!rg_flag){
+  83   5                  togle_flag = 1;
+  84   5                  sec = 3;
+  85   5                  skip_yellow = 0;
+  86   5                }
+  87   4                rg_flag = !rg_flag;
+  88   4                led_green = 1;
+  89   4                led_red = 1;
+  90   4              }
+  91   3            }
+  92   2          }
+  93   1          
+  94   1          while (togle_flag) {
+  95   2            if (skip_yellow) {
+  96   3              togle_flag = !togle_flag;
+  97   3              sec = 5;
+  98   3            } else {
+  99   3              display();
+ 100   3              if(i == 20) { //
+ 101   4                led_yellow = 0;
+ 102   4                led_yellow1 = 0;
+ 103   4                i = 0;
+ 104   4              // 
+ 105   4                if (sec > 0) sec--;
+ 106   4                else {
+ 107   5                  sec = 5;
+ 108   5                  togle_flag = !togle_flag;
+ 109   5                  led_yellow = 1;
+ 110   5                  led_yellow1 = 1;
+ 111   5                }
+ 112   4              }
+ 113   3            }
+ 114   2          }
+ 115   1      }
+C51 COMPILER V9.57.0.0   TRAFIC_LED                                                        03/18/2021 16:17:03 PAGE 3   
+
+ 116          
+ 117          void main(){
+ 118   1        timer0();
+ 119   1        while (1) {
+ 120   2          first();
+ 121   2        }
+ 122   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    378    ----
+   CONSTANT SIZE    =     10    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     10    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
